@@ -141,6 +141,11 @@ There are no known dependencies for Darwin.
 
   Once you have build the binary, you can install this to your executable path, E.g. `install -m 755 clipse /usr/bin || mv clipse /bin/`.
 
+  In this fork the toolchain comes from the Nix flake instead of a version
+  manager: run `direnv allow` once, then `just` lists the tasks (`just wayland`,
+  `just test`, `just lint`, ...). `nix build .#default` produces the same
+  wayland binary without entering the shell.
+
 </details>
 
 

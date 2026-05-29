@@ -1,2 +1,5 @@
 clipse
 aur_key*
+result
+.direnv/
+.bin/
