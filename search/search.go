@@ -44,6 +44,8 @@ const (
 
 	typoEditPenalty  = 4
 	typoMaxTargetLen = 256
+
+	scoreContiguousBonus = 1 << 13
 )
 
 type Config struct {
@@ -167,6 +169,15 @@ func fzfFilter(cfg Config, metaLookup MetaLookup) func(string, []string) []list.
 				if typo {
 					if ts, tb, te, tp, ok := typoTokenMatch(pattern, target, cfg.Normalize, perfect.Score); ok && ts > tokScore {
 						tokScore, tokBegin, tokEnd, tokPositions = ts, tb, te, tp
+					}
+				}
+
+				if cb, ce, ok := contiguousMatch(pattern, target, cfg.Normalize, caseSensitive); ok {
+					tokScore = scoreContiguousBonus
+					tokBegin, tokEnd = cb, ce
+					tokPositions = tokPositions[:0]
+					for p := cb; p <= ce; p++ {
+						tokPositions = append(tokPositions, p)
 					}
 				}
 
@@ -386,6 +397,37 @@ func damerauLevenshtein(a, b []rune, maxD int) int {
 		prev2, prev, curr = prev, curr, prev2
 	}
 	return prev[lb]
+}
+
+func contiguousMatch(pattern []rune, target string, normalize, caseSensitive bool) (begin, end int, ok bool) {
+	if len(pattern) == 0 {
+		return 0, 0, false
+	}
+	hay := []rune(target)
+	if len(hay) < len(pattern) {
+		return 0, 0, false
+	}
+	for i := range hay {
+		if !caseSensitive {
+			hay[i] = unicode.ToLower(hay[i])
+		}
+	}
+	if normalize {
+		hay = algo.NormalizeRunes(hay)
+	}
+	for i := 0; i+len(pattern) <= len(hay); i++ {
+		match := true
+		for j := range pattern {
+			if hay[i+j] != pattern[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i, i + len(pattern) - 1, true
+		}
+	}
+	return 0, 0, false
 }
 
 func isWordRune(r rune) bool {
