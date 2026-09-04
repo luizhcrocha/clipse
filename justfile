@@ -30,8 +30,12 @@ darwin:
 run: wayland
     ./{{ binary }}
 
-# Drop the binary in $INSTALL_DIR (default ~/.local/bin), same as `make install`.
+# `install` is for a host whose system does not ship this tool. Where it does
+# (NixOS, nix-darwin: the flake package in the system profile) a copy in
+# ~/.cargo/bin would shadow it, so the recipe refuses: push, and the system
+# update takes it; `nix run .` tries an uncommitted checkout.
 install: wayland
+    @if [ -x /run/current-system/sw/bin/clipse ] || [ -x "/etc/profiles/per-user/$USER/bin/clipse" ]; then echo "✗ the system profile ships clipse (the flake package) — push, then update the system; 'nix run .' tries this checkout"; exit 1; fi
     install -m 755 {{ binary }} "${INSTALL_DIR:-$HOME/.local/bin}"
 
 clean:
